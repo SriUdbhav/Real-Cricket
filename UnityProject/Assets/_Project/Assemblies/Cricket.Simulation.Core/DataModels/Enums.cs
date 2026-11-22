@@ -152,7 +152,8 @@ namespace Cricket.Simulation.Core.DataModels
         Tie = 4,
         TiePendingSuperOver = 5,
         Draw = 6,
-        NoResult = 7
+        NoResult = 7,
+        WinBySuperOver = 8
     }
 
     public enum ContentLicenseType

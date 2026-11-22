@@ -14,6 +14,7 @@ namespace Cricket.Simulation.Core.Rules
         void InitializeMatch(MatchConfig config);
         void RecordToss(string tossWinnerTeamId, TossDecision decision);
         InningsState StartNextInnings(bool enforceFollowOn = false);
+        InningsState StartSuperOverInnings(IReadOnlyList<string> nominatedBatters);
         void StartOver(string bowlerId);
         BallEventRecord EvaluateAndCommitDelivery(DeliveryResolutionInput input);
         void DeclareCurrentInnings();

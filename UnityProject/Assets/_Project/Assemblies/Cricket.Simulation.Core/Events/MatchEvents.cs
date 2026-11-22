@@ -251,4 +251,62 @@ namespace Cricket.Simulation.Core.Events
             Message = message;
         }
     }
+
+    public readonly struct SuperOverStartedEvent : IMatchEvent
+    {
+        public long SequenceNumber { get; }
+        public int SuperOverRound { get; }
+        public int HalfNumber { get; }
+        public string BattingTeamId { get; }
+        public string BowlingTeamId { get; }
+        public int? TargetRuns { get; }
+
+        public SuperOverStartedEvent(
+            long sequenceNumber,
+            int superOverRound,
+            int halfNumber,
+            string battingTeamId,
+            string bowlingTeamId,
+            int? targetRuns)
+        {
+            SequenceNumber = sequenceNumber;
+            SuperOverRound = superOverRound;
+            HalfNumber = halfNumber;
+            BattingTeamId = battingTeamId;
+            BowlingTeamId = bowlingTeamId;
+            TargetRuns = targetRuns;
+        }
+    }
+
+    public readonly struct SuperOverCompletedEvent : IMatchEvent
+    {
+        public long SequenceNumber { get; }
+        public int SuperOverRound { get; }
+        public string FirstBattingTeamId { get; }
+        public int FirstBattingRuns { get; }
+        public string SecondBattingTeamId { get; }
+        public int SecondBattingRuns { get; }
+        public bool IsTied { get; }
+        public string? WinnerTeamId { get; }
+
+        public SuperOverCompletedEvent(
+            long sequenceNumber,
+            int superOverRound,
+            string firstBattingTeamId,
+            int firstBattingRuns,
+            string secondBattingTeamId,
+            int secondBattingRuns,
+            bool isTied,
+            string? winnerTeamId)
+        {
+            SequenceNumber = sequenceNumber;
+            SuperOverRound = superOverRound;
+            FirstBattingTeamId = firstBattingTeamId;
+            FirstBattingRuns = firstBattingRuns;
+            SecondBattingTeamId = secondBattingTeamId;
+            SecondBattingRuns = secondBattingRuns;
+            IsTied = isTied;
+            WinnerTeamId = winnerTeamId;
+        }
+    }
 }

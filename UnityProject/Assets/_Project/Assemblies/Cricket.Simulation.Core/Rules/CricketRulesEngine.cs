@@ -76,8 +76,12 @@ namespace Cricket.Simulation.Core.Rules
                 throw new InvalidOperationException("Cannot start an innings before the toss is recorded.");
             }
 
-            if (state.Result.ResultType != MatchResultType.InProgress &&
-                state.Result.ResultType != MatchResultType.TiePendingSuperOver)
+            if (state.Result.ResultType == MatchResultType.TiePendingSuperOver)
+            {
+                throw new InvalidOperationException("Match is tied pending Super Over. Call StartSuperOverInnings instead.");
+            }
+
+            if (state.Result.ResultType != MatchResultType.InProgress)
             {
                 throw new InvalidOperationException("Match is already completed.");
             }
@@ -155,8 +159,115 @@ namespace Cricket.Simulation.Core.Rules
             EnsureBatterState(innings, innings.StrikerId);
             EnsureBatterState(innings, innings.NonStrikerId);
 
+            state.ActiveSuperOverInnings = null;
             state.Innings.Add(innings);
             state.CurrentInningsIndex = state.Innings.Count - 1;
+
+            _eventBus.Publish(new InningsStartedEvent(
+                NextEventSeq(),
+                innings.InningsNumber,
+                innings.BattingTeamId,
+                innings.BowlingTeamId,
+                innings.TargetRuns));
+
+            return innings;
+        }
+
+        public InningsState StartSuperOverInnings(IReadOnlyList<string> nominatedBatters)
+        {
+            MatchState state = State;
+            CompetitionRulesProfile rules = state.Config.Rules;
+
+            if (!rules.AllowSuperOverOnTie)
+            {
+                PublishRuleViolation("SUPER_OVER_DISALLOWED", "Super Over is disabled in this competition profile.");
+                throw new InvalidOperationException("Super Over is disabled in this competition profile.");
+            }
+
+            if (state.Result.ResultType != MatchResultType.TiePendingSuperOver)
+            {
+                throw new InvalidOperationException("Super Over can only be started when match result is TiePendingSuperOver.");
+            }
+
+            if (state.CurrentInnings != null && !state.CurrentInnings.IsCompleted)
+            {
+                throw new InvalidOperationException("Cannot start Super Over innings while an innings is still active.");
+            }
+
+            int completedSuperOverHalves = state.SuperOverInnings.Count;
+            int round = (completedSuperOverHalves / 2) + 1;
+            int half = (completedSuperOverHalves % 2) + 1;
+
+            if (half == 1 && round > 1)
+            {
+                bool canRepeat = rules.AllowRepeatedSuperOvers &&
+                                 (!rules.MaxSuperOverRounds.HasValue || round <= rules.MaxSuperOverRounds.Value);
+                if (!canRepeat)
+                {
+                    PublishRuleViolation("REPEATED_SUPER_OVER_DISALLOWED", "Competition profile does not allow another Super Over round.");
+                    throw new InvalidOperationException("Competition profile does not allow another Super Over round.");
+                }
+            }
+
+            string battingTeamId;
+            string bowlingTeamId;
+            int? targetRuns = null;
+
+            if (half == 1)
+            {
+                if (round == 1)
+                {
+                    // Standard regulation: team batting second in the main match bats first in Super Over 1
+                    battingTeamId = state.Innings[state.Innings.Count - 1].BattingTeamId;
+                }
+                else
+                {
+                    // In repeated Super Overs, team batting second in the prior Super Over bats first
+                    battingTeamId = state.SuperOverInnings[state.SuperOverInnings.Count - 1].BattingTeamId;
+                }
+
+                bowlingTeamId = state.Config.GetOpponentTeamId(battingTeamId);
+            }
+            else
+            {
+                InningsState firstHalf = state.SuperOverInnings[state.SuperOverInnings.Count - 1];
+                battingTeamId = firstHalf.BowlingTeamId;
+                bowlingTeamId = firstHalf.BattingTeamId;
+                targetRuns = firstHalf.TotalRuns + 1;
+            }
+
+            int requiredBatters = rules.SuperOverMaxWickets + 1;
+            ValidateSuperOverBatters(state, rules, battingTeamId, round, nominatedBatters, requiredBatters);
+
+            var innings = new InningsState(
+                inningsNumber: completedSuperOverHalves + 1,
+                battingTeamId: battingTeamId,
+                bowlingTeamId: bowlingTeamId,
+                targetRuns: targetRuns,
+                isSuperOver: true,
+                superOverRound: round,
+                maxWickets: rules.SuperOverMaxWickets,
+                maxOversOverride: rules.SuperOverOversPerTeam,
+                nominatedBattingOrder: nominatedBatters)
+            {
+                StrikerId = nominatedBatters[0],
+                NonStrikerId = nominatedBatters[1],
+                NextBatterOrderIndex = 2
+            };
+
+            EnsureBatterState(innings, innings.StrikerId);
+            EnsureBatterState(innings, innings.NonStrikerId);
+
+            state.SuperOverInnings.Add(innings);
+            state.ActiveSuperOverInnings = innings;
+
+            _eventBus.Publish(new SuperOverStartedEvent(
+                NextEventSeq(),
+                round,
+                half,
+                battingTeamId,
+                bowlingTeamId,
+                targetRuns));
 
             _eventBus.Publish(new InningsStartedEvent(
                 NextEventSeq(),
@@ -194,7 +305,23 @@ namespace Cricket.Simulation.Core.Rules
             }
 
             BowlerSpellState spell = EnsureBowlerState(innings, bowlerId);
-            if (rules.MaxOversPerBowler.HasValue && spell.CompletedOvers >= rules.MaxOversPerBowler.Value)
+            if (innings.IsSuperOver)
+            {
+                if (innings.SuperOverRound > 1 &&
+                    rules.SuperOverExcludePreviousBowlersInSubsequentRounds &&
+                    HasBowledInPriorSuperOver(state, innings.BowlingTeamId, innings.SuperOverRound, bowlerId))
+                {
+                    PublishRuleViolation("SUPER_OVER_BOWLER_ALREADY_USED", $"Bowler '{bowlerId}' bowled in a previous Super Over and is ineligible for Super Over {innings.SuperOverRound}.");
+                    throw new InvalidOperationException($"Bowler '{bowlerId}' bowled in a previous Super Over and is ineligible.");
+                }
+
+                if (innings.MaxOversOverride.HasValue && innings.CompletedOvers >= innings.MaxOversOverride.Value)
+                {
+                    PublishRuleViolation("SUPER_OVER_QUOTA_REACHED", "Super Over over quota has already been completed.");
+                    throw new InvalidOperationException("Super Over over quota has already been completed.");
+                }
+            }
+            else if (rules.MaxOversPerBowler.HasValue && spell.CompletedOvers >= rules.MaxOversPerBowler.Value)
             {
                 PublishRuleViolation("BOWLER_QUOTA_EXCEEDED", $"Bowler '{bowlerId}' has completed their maximum quota of {rules.MaxOversPerBowler.Value} overs.");
                 throw new InvalidOperationException($"Bowler '{bowlerId}' has already bowled the maximum {rules.MaxOversPerBowler.Value} overs.");
@@ -539,6 +666,12 @@ namespace Cricket.Simulation.Core.Rules
             MatchState state = State;
             InningsState innings = RequireActiveInnings();
 
+            if (innings.IsSuperOver)
+            {
+                PublishRuleViolation("DECLARATION_DISALLOWED_IN_SUPER_OVER", "Declarations are not permitted during a Super Over.");
+                throw new InvalidOperationException("Declarations are not permitted during a Super Over.");
+            }
+
             if (!state.Config.Rules.AllowDeclarations)
             {
                 PublishRuleViolation("DECLARATION_DISALLOWED", "Declarations are not permitted in this competition profile.");
@@ -810,13 +943,13 @@ namespace Cricket.Simulation.Core.Rules
                 return true;
             }
 
-            if (innings.WicketsLost >= WicketsRequiredForAllOut)
+            if (innings.WicketsLost >= innings.MaxWickets)
             {
                 CompleteInnings(state, innings, InningsEndReason.AllOut);
                 return true;
             }
 
-            int? maxOvers = state.Config.Rules.MaxOversPerInnings;
+            int? maxOvers = innings.MaxOversOverride ?? state.Config.Rules.MaxOversPerInnings;
             if (maxOvers.HasValue && innings.CompletedOvers >= maxOvers.Value)
             {
                 CompleteInnings(state, innings, InningsEndReason.OversCompleted);
@@ -832,7 +965,7 @@ namespace Cricket.Simulation.Core.Rules
             innings.EndReason = reason;
             innings.CurrentBowlerId = null;
 
-            bool followOnEligible = IsFollowOnEligible();
+            bool followOnEligible = !innings.IsSuperOver && IsFollowOnEligible();
 
             _eventBus.Publish(new InningsCompletedEvent(
                 NextEventSeq(),
@@ -843,7 +976,99 @@ namespace Cricket.Simulation.Core.Rules
                 reason,
                 followOnEligible));
 
-            EvaluateMatchCompletion(state);
+            if (innings.IsSuperOver)
+            {
+                EvaluateSuperOverCompletion(state, innings);
+            }
+            else
+            {
+                EvaluateMatchCompletion(state);
+            }
+        }
+
+        private void EvaluateSuperOverCompletion(MatchState state, InningsState completedSuperOverInnings)
+        {
+            // Half 1 finished -> stay in TiePendingSuperOver until Half 2 finishes
+            if (state.SuperOverInnings.Count % 2 == 1)
+            {
+                return;
+            }
+
+            InningsState firstHalf = state.SuperOverInnings[state.SuperOverInnings.Count - 2];
+            InningsState secondHalf = completedSuperOverInnings;
+            int round = secondHalf.SuperOverRound;
+            CompetitionRulesProfile rules = state.Config.Rules;
+
+            if (secondHalf.TotalRuns > firstHalf.TotalRuns)
+            {
+                int wicketsRemaining = secondHalf.MaxWickets - secondHalf.WicketsLost;
+                _eventBus.Publish(new SuperOverCompletedEvent(
+                    NextEventSeq(),
+                    round,
+                    firstHalf.BattingTeamId,
+                    firstHalf.TotalRuns,
+                    secondHalf.BattingTeamId,
+                    secondHalf.TotalRuns,
+                    isTied: false,
+                    winnerTeamId: secondHalf.BattingTeamId));
+
+                CommitMatchResult(state, new MatchResult(
+                    MatchResultType.WinBySuperOver,
+                    secondHalf.BattingTeamId,
+                    wicketsRemaining,
+                    $"{secondHalf.BattingTeamId} won Super Over {round} by {wicketsRemaining} wicket(s)"));
+            }
+            else if (firstHalf.TotalRuns > secondHalf.TotalRuns)
+            {
+                int runMargin = firstHalf.TotalRuns - secondHalf.TotalRuns;
+                _eventBus.Publish(new SuperOverCompletedEvent(
+                    NextEventSeq(),
+                    round,
+                    firstHalf.BattingTeamId,
+                    firstHalf.TotalRuns,
+                    secondHalf.BattingTeamId,
+                    secondHalf.TotalRuns,
+                    isTied: false,
+                    winnerTeamId: firstHalf.BattingTeamId));
+
+                CommitMatchResult(state, new MatchResult(
+                    MatchResultType.WinBySuperOver,
+                    firstHalf.BattingTeamId,
+                    runMargin,
+                    $"{firstHalf.BattingTeamId} won Super Over {round} by {runMargin} run(s)"));
+            }
+            else
+            {
+                _eventBus.Publish(new SuperOverCompletedEvent(
+                    NextEventSeq(),
+                    round,
+                    firstHalf.BattingTeamId,
+                    firstHalf.TotalRuns,
+                    secondHalf.BattingTeamId,
+                    secondHalf.TotalRuns,
+                    isTied: true,
+                    winnerTeamId: null));
+
+                bool canRepeat = rules.AllowRepeatedSuperOvers &&
+                                 (!rules.MaxSuperOverRounds.HasValue || round < rules.MaxSuperOverRounds.Value);
+
+                if (canRepeat)
+                {
+                    CommitMatchResult(state, new MatchResult(
+                        MatchResultType.TiePendingSuperOver,
+                        null,
+                        0,
+                        $"Super Over {round} tied - Super Over {round + 1} required"));
+                }
+                else
+                {
+                    CommitMatchResult(state, new MatchResult(
+                        MatchResultType.Tie,
+                        null,
+                        0,
+                        $"Match tied after {round} Super Over(s)"));
+                }
+            }
         }
 
         private void EvaluateMatchCompletion(MatchState state)
@@ -965,15 +1190,92 @@ namespace Cricket.Simulation.Core.Rules
 
         private static string? FetchNextBatterId(MatchState state, InningsState innings)
         {
-            PlayingLineup lineup = state.Config.GetLineupForTeam(innings.BattingTeamId);
-            if (innings.NextBatterOrderIndex >= lineup.BattingOrderPlayerIds.Count)
+            IReadOnlyList<string> battingOrder = innings.NominatedBattingOrder
+                ?? state.Config.GetLineupForTeam(innings.BattingTeamId).BattingOrderPlayerIds;
+
+            if (innings.NextBatterOrderIndex >= battingOrder.Count)
             {
                 return null;
             }
 
-            string nextId = lineup.BattingOrderPlayerIds[innings.NextBatterOrderIndex];
+            string nextId = battingOrder[innings.NextBatterOrderIndex];
             innings.NextBatterOrderIndex++;
             return nextId;
+        }
+
+        private void ValidateSuperOverBatters(
+            MatchState state,
+            CompetitionRulesProfile rules,
+            string battingTeamId,
+            int superOverRound,
+            IReadOnlyList<string> nominatedBatters,
+            int requiredBatters)
+        {
+            if (nominatedBatters == null || nominatedBatters.Count != requiredBatters)
+            {
+                PublishRuleViolation("SUPER_OVER_BATTER_COUNT_INVALID", $"Super Over requires exactly {requiredBatters} nominated batters.");
+                throw new ArgumentException($"Super Over requires exactly {requiredBatters} nominated batters.", nameof(nominatedBatters));
+            }
+
+            PlayingLineup lineup = state.Config.GetLineupForTeam(battingTeamId);
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+
+            for (int i = 0; i < nominatedBatters.Count; i++)
+            {
+                string batterId = nominatedBatters[i];
+                if (string.IsNullOrWhiteSpace(batterId) || !seen.Add(batterId))
+                {
+                    PublishRuleViolation("SUPER_OVER_DUPLICATE_BATTER", "Nominated Super Over batters must be unique and non-empty.");
+                    throw new ArgumentException("Nominated Super Over batters must be unique and non-empty.", nameof(nominatedBatters));
+                }
+
+                if (!lineup.ContainsPlayer(batterId))
+                {
+                    PublishRuleViolation("SUPER_OVER_BATTER_NOT_IN_XI", $"Nominated batter '{batterId}' is not in the Playing XI.");
+                    throw new InvalidOperationException($"Nominated batter '{batterId}' is not in the Playing XI.");
+                }
+
+                if (superOverRound > 1 &&
+                    rules.SuperOverExcludeDismissedBattersInSubsequentRounds &&
+                    WasDismissedInPriorSuperOver(state, battingTeamId, superOverRound, batterId))
+                {
+                    PublishRuleViolation("SUPER_OVER_BATTER_ALREADY_DISMISSED", $"Batter '{batterId}' was dismissed in an earlier Super Over and cannot bat in Super Over {superOverRound}.");
+                    throw new InvalidOperationException($"Batter '{batterId}' was dismissed in an earlier Super Over and is ineligible.");
+                }
+            }
+        }
+
+        private static bool WasDismissedInPriorSuperOver(MatchState state, string battingTeamId, int currentRound, string playerId)
+        {
+            for (int i = 0; i < state.SuperOverInnings.Count; i++)
+            {
+                InningsState prior = state.SuperOverInnings[i];
+                if (prior.SuperOverRound < currentRound &&
+                    string.Equals(prior.BattingTeamId, battingTeamId, StringComparison.Ordinal) &&
+                    prior.BatterStates.TryGetValue(playerId, out BatterInningsState? batterState) &&
+                    batterState.IsOut)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasBowledInPriorSuperOver(MatchState state, string bowlingTeamId, int currentRound, string bowlerId)
+        {
+            for (int i = 0; i < state.SuperOverInnings.Count; i++)
+            {
+                InningsState prior = state.SuperOverInnings[i];
+                if (prior.SuperOverRound < currentRound &&
+                    string.Equals(prior.BowlingTeamId, bowlingTeamId, StringComparison.Ordinal) &&
+                    prior.BowlerStates.ContainsKey(bowlerId))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void SwapEnds(InningsState innings)

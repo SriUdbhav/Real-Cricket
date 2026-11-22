@@ -73,6 +73,12 @@ namespace Cricket.Simulation.Core.DataModels
         public int ReviewsPerInnings { get; }
         public bool RetainReviewOnUmpiresCall { get; }
         public bool AllowSuperOverOnTie { get; }
+        public int SuperOverMaxWickets { get; }
+        public int SuperOverOversPerTeam { get; }
+        public bool AllowRepeatedSuperOvers { get; }
+        public int? MaxSuperOverRounds { get; }
+        public bool SuperOverExcludeDismissedBattersInSubsequentRounds { get; }
+        public bool SuperOverExcludePreviousBowlersInSubsequentRounds { get; }
         public bool CountAllOutInningsAsFullQuotaForNrr { get; }
         public bool EnableDlsAdjustments { get; }
 
@@ -102,7 +108,13 @@ namespace Cricket.Simulation.Core.DataModels
             bool retainReviewOnUmpiresCall = true,
             bool allowSuperOverOnTie = true,
             bool countAllOutInningsAsFullQuotaForNrr = true,
-            bool enableDlsAdjustments = true)
+            bool enableDlsAdjustments = true,
+            int superOverMaxWickets = 2,
+            int superOverOversPerTeam = 1,
+            bool allowRepeatedSuperOvers = true,
+            int? maxSuperOverRounds = null,
+            bool superOverExcludeDismissedBattersInSubsequentRounds = true,
+            bool superOverExcludePreviousBowlersInSubsequentRounds = true)
         {
             if (ballsPerOver < 1)
             {
@@ -112,6 +124,21 @@ namespace Cricket.Simulation.Core.DataModels
             if (maxInningsPerTeam < 1 || maxInningsPerTeam > 2)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxInningsPerTeam));
+            }
+
+            if (superOverMaxWickets < 1 || superOverMaxWickets > 10)
+            {
+                throw new ArgumentOutOfRangeException(nameof(superOverMaxWickets));
+            }
+
+            if (superOverOversPerTeam < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(superOverOversPerTeam));
+            }
+
+            if (maxSuperOverRounds.HasValue && maxSuperOverRounds.Value < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxSuperOverRounds));
             }
 
             ProfileId = string.IsNullOrWhiteSpace(profileId) ? "custom" : profileId;
@@ -138,6 +165,12 @@ namespace Cricket.Simulation.Core.DataModels
             ReviewsPerInnings = System.Math.Max(0, reviewsPerInnings);
             RetainReviewOnUmpiresCall = retainReviewOnUmpiresCall;
             AllowSuperOverOnTie = allowSuperOverOnTie;
+            SuperOverMaxWickets = superOverMaxWickets;
+            SuperOverOversPerTeam = superOverOversPerTeam;
+            AllowRepeatedSuperOvers = allowRepeatedSuperOvers;
+            MaxSuperOverRounds = maxSuperOverRounds;
+            SuperOverExcludeDismissedBattersInSubsequentRounds = superOverExcludeDismissedBattersInSubsequentRounds;
+            SuperOverExcludePreviousBowlersInSubsequentRounds = superOverExcludePreviousBowlersInSubsequentRounds;
             CountAllOutInningsAsFullQuotaForNrr = countAllOutInningsAsFullQuotaForNrr;
             EnableDlsAdjustments = enableDlsAdjustments;
         }
@@ -272,7 +305,8 @@ namespace Cricket.Simulation.Core.DataModels
                 retainReviewOnUmpiresCall: true,
                 allowSuperOverOnTie: false,
                 countAllOutInningsAsFullQuotaForNrr: false,
-                enableDlsAdjustments: false);
+                enableDlsAdjustments: false,
+                allowRepeatedSuperOvers: false);
         }
     }
 }

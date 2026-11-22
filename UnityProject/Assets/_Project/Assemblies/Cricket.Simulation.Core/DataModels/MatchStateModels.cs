@@ -58,6 +58,11 @@ namespace Cricket.Simulation.Core.DataModels
         public string BattingTeamId { get; }
         public string BowlingTeamId { get; }
         public int? TargetRuns { get; }
+        public bool IsSuperOver { get; }
+        public int SuperOverRound { get; }
+        public int MaxWickets { get; }
+        public int? MaxOversOverride { get; }
+        public IReadOnlyList<string>? NominatedBattingOrder { get; }
         public int TotalRuns { get; internal set; }
         public int WicketsLost { get; internal set; }
         public int CompletedOvers { get; internal set; }
@@ -84,12 +89,26 @@ namespace Cricket.Simulation.Core.DataModels
         public Dictionary<string, BowlerSpellState> BowlerStates { get; } = new Dictionary<string, BowlerSpellState>(StringComparer.Ordinal);
         public List<BallEventRecord> BallLog { get; } = new List<BallEventRecord>(128);
 
-        public InningsState(int inningsNumber, string battingTeamId, string bowlingTeamId, int? targetRuns)
+        public InningsState(
+            int inningsNumber,
+            string battingTeamId,
+            string bowlingTeamId,
+            int? targetRuns,
+            bool isSuperOver = false,
+            int superOverRound = 0,
+            int maxWickets = 10,
+            int? maxOversOverride = null,
+            IReadOnlyList<string>? nominatedBattingOrder = null)
         {
             InningsNumber = inningsNumber;
             BattingTeamId = battingTeamId;
             BowlingTeamId = bowlingTeamId;
             TargetRuns = targetRuns;
+            IsSuperOver = isSuperOver;
+            SuperOverRound = superOverRound;
+            MaxWickets = System.Math.Max(1, maxWickets);
+            MaxOversOverride = maxOversOverride;
+            NominatedBattingOrder = nominatedBattingOrder != null ? new List<string>(nominatedBattingOrder) : null;
         }
 
         public int GetTotalLegalBalls(int ballsPerOver)
@@ -192,13 +211,16 @@ namespace Cricket.Simulation.Core.DataModels
         public string? BattingFirstTeamId { get; internal set; }
         public string? BowlingFirstTeamId { get; internal set; }
         public List<InningsState> Innings { get; } = new List<InningsState>(4);
+        public List<InningsState> SuperOverInnings { get; } = new List<InningsState>(2);
         public int CurrentInningsIndex { get; internal set; } = -1;
+        internal InningsState? ActiveSuperOverInnings { get; set; }
         public MatchResult Result { get; internal set; } = new MatchResult(MatchResultType.InProgress, null, 0, "Match in progress");
 
         public InningsState? CurrentInnings =>
-            CurrentInningsIndex >= 0 && CurrentInningsIndex < Innings.Count
+            ActiveSuperOverInnings ??
+            (CurrentInningsIndex >= 0 && CurrentInningsIndex < Innings.Count
                 ? Innings[CurrentInningsIndex]
-                : null;
+                : null);
 
         public MatchState(MatchConfig config)
         {
