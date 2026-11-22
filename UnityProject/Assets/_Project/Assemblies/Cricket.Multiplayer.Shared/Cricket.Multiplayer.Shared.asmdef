@@ -1,0 +1,16 @@
+{
+  "name": "Cricket.Multiplayer.Shared",
+  "rootNamespace": "Cricket.Multiplayer.Shared",
+  "references": [
+    "Cricket.Simulation.Core"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true
+}

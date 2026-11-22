@@ -1,0 +1,9 @@
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Simulation.Core/bin/Debug/netstandard2.1/Cricket.Simulation.Core.deps.json
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Simulation.Core/bin/Debug/netstandard2.1/Cricket.Simulation.Core.dll
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Simulation.Core/bin/Debug/netstandard2.1/Cricket.Simulation.Core.pdb
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Simulation.Core/obj/Debug/netstandard2.1/Cricket.Simulation.Core.GeneratedMSBuildEditorConfig.editorconfig
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Simulation.Core/obj/Debug/netstandard2.1/Cricket.Simulation.Core.AssemblyInfoInputs.cache
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Simulation.Core/obj/Debug/netstandard2.1/Cricket.Simulation.Core.AssemblyInfo.cs
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Simulation.Core/obj/Debug/netstandard2.1/Cricket.Simulation.Core.csproj.CoreCompileInputs.cache
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Simulation.Core/obj/Debug/netstandard2.1/Cricket.Simulation.Core.dll
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Simulation.Core/obj/Debug/netstandard2.1/Cricket.Simulation.Core.pdb

@@ -1,0 +1,40 @@
+{
+  "runtimeTarget": {
+    "name": ".NETStandard,Version=v2.1/",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETStandard,Version=v2.1": {},
+    ".NETStandard,Version=v2.1/": {
+      "Cricket.Multiplayer.Shared/1.0.0": {
+        "dependencies": {
+          "Cricket.Simulation.Core": "1.0.0"
+        },
+        "runtime": {
+          "Cricket.Multiplayer.Shared.dll": {}
+        }
+      },
+      "Cricket.Simulation.Core/1.0.0": {
+        "runtime": {
+          "Cricket.Simulation.Core.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Cricket.Multiplayer.Shared/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Cricket.Simulation.Core/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

@@ -1,0 +1,5 @@
+is_global = true
+build_property.RootNamespace = Cricket.Multiplayer.Shared
+build_property.ProjectDir = /app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Multiplayer.Shared/
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 

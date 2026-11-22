@@ -1,0 +1,13 @@
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Multiplayer.Shared/bin/Debug/netstandard2.1/Cricket.Multiplayer.Shared.deps.json
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Multiplayer.Shared/bin/Debug/netstandard2.1/Cricket.Multiplayer.Shared.dll
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Multiplayer.Shared/bin/Debug/netstandard2.1/Cricket.Multiplayer.Shared.pdb
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Multiplayer.Shared/bin/Debug/netstandard2.1/Cricket.Simulation.Core.dll
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Multiplayer.Shared/bin/Debug/netstandard2.1/Cricket.Simulation.Core.pdb
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Multiplayer.Shared/obj/Debug/netstandard2.1/Cricket.Multiplayer.Shared.csproj.AssemblyReference.cache
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Multiplayer.Shared/obj/Debug/netstandard2.1/Cricket.Multiplayer.Shared.GeneratedMSBuildEditorConfig.editorconfig
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Multiplayer.Shared/obj/Debug/netstandard2.1/Cricket.Multiplayer.Shared.AssemblyInfoInputs.cache
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Multiplayer.Shared/obj/Debug/netstandard2.1/Cricket.Multiplayer.Shared.AssemblyInfo.cs
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Multiplayer.Shared/obj/Debug/netstandard2.1/Cricket.Multiplayer.Shared.csproj.CoreCompileInputs.cache
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Multiplayer.Shared/obj/Debug/netstandard2.1/Cricket..67B9652F.Up2Date
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Multiplayer.Shared/obj/Debug/netstandard2.1/Cricket.Multiplayer.Shared.dll
+/app/applet/UnityProject/Assets/_Project/Assemblies/Cricket.Multiplayer.Shared/obj/Debug/netstandard2.1/Cricket.Multiplayer.Shared.pdb

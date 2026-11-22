@@ -1,0 +1,6 @@
+{
+  "name": "Next-Gen Cricket Simulation Core",
+  "description": "Modular Unity 3D / pure C# cricket simulation core, competition-profile rules engine, multiplayer shared protocol, and NUnit verification suite.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>Cricket.Multiplayer.Shared</RootNamespace>
+    <AssemblyName>Cricket.Multiplayer.Shared</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Cricket.Simulation.Core\Cricket.Simulation.Core.csproj" />
+  </ItemGroup>
+</Project>
